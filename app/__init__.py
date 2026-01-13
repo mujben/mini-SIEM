@@ -29,7 +29,8 @@ def create_app(config_class=Config) -> Flask:
     app.register_blueprint(auth_bp)
 
     # Disable CSRF for API routes
-    csrf.exempt(api_bp)
+    #csrf.exempt(api_bp)
+    #Additional exercises 6.5 - security hardening
 
     # Automatically create database
     with app.app_context():

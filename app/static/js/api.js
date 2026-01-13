@@ -2,6 +2,20 @@
  * Wrapper na Fetch API do komunikacji z backendem Flask
  */
 
+// helper function for fetching headers - protects from csrf
+function getHeaders() {
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    if(!metaTag) {
+        console.error("Błąd: brak tagu meta 'csrf-token' w nagłówku strony");
+        return {'Content-Type': 'application/json'};
+    }
+    const csrfToken = metaTag.getAttribute('content');
+    return {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+    };
+}
+
 // --- HOSTS (GOTOWE - WZÓR) ---
 export async function fetchHosts() {
     const res = await fetch('/api/hosts');
@@ -10,7 +24,7 @@ export async function fetchHosts() {
 export async function createHost(data) {
     const res = await fetch('/api/hosts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(data)
     });
     if(!res.ok) throw new Error((await res.json()).error);
@@ -19,14 +33,17 @@ export async function createHost(data) {
 export async function updateHost(id, data) {
     const res = await fetch(`/api/hosts/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(data)
     });
     if(!res.ok) throw new Error('Błąd edycji hosta');
     return await res.json();
 }
 export async function removeHost(id) {
-    await fetch(`/api/hosts/${id}`, { method: 'DELETE' });
+    await fetch(`/api/hosts/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
 }
 
 // --- MONITORING / LOGI (GOTOWE) ---
@@ -45,7 +62,8 @@ export async function checkHostStatus(id, osType) {
 
 export async function triggerLogFetch(hostId) {
     const res = await fetch(`/api/hosts/${hostId}/logs`, {
-        method: 'POST'
+        method: 'POST',
+        headers: getHeaders()
     });
     if (!res.ok) {
         const err = await res.json();
@@ -70,7 +88,7 @@ export async function fetchIPs() {
 export async function createIP(data) {
     const res = await fetch('/api/ips', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(data)
     });
     if(!res.ok) {
@@ -83,7 +101,7 @@ export async function createIP(data) {
 export async function updateIP(id, data) {
     const res = await fetch(`/api/ips/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(data)
     });
     if(!res.ok) throw new Error('Błąd edycji IP');
@@ -91,7 +109,10 @@ export async function updateIP(id, data) {
 }
 
 export async function removeIP(id) {
-    const res = await fetch(`/api/ips/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/ips/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
     if(!res.ok) throw new Error('Błąd usuwania IP');
 }
 
