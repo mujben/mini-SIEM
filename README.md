@@ -29,7 +29,7 @@ Projekt oparty o architekturę Klient-Serwer:
 
 1.  **Klonowanie i środowisko:**
     ```bash
-    git clone [https://github.com/mujben/mini-SIEM.git](https://github.com/mujben/mini-SIEM.git)
+    git clone https://github.com/mujben/mini-SIEM.git
     cd mini-SIEM
     python -m venv venv
     # Windows: venv\Scripts\activate | Linux: source venv/bin/activate
