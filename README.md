@@ -29,7 +29,7 @@ Projekt oparty o architekturę Klient-Serwer:
 
 1.  **Klonowanie i środowisko:**
     ```bash
-    git clone <repo_url>
+    git clone https://github.com/mujben/mini-SIEM.git
     cd Cyber-lab8-Starter
     python -m venv venv
     # Windows: venv\Scripts\activate | Linux: source venv/bin/activate
