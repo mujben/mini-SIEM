@@ -239,3 +239,15 @@ def get_recent_alerts():
     # Return 20 most recent alerts
     alerts = Alert.query.order_by(Alert.timestamp.desc()).limit(20).all()
     return jsonify([a.to_dict() for a in alerts])
+
+@api_bp.route("/stats/top-ips", methods=["GET"])
+def get_top_ips():
+    #import to count IP addresses
+    from sqlalchemy import func
+
+    stats = db.session.query(
+        Alert.source_ip,
+        func.count(Alert.id).label('total')
+    ).group_by(Alert.source_ip).order_by(func.count(Alert.id).desc()).limit(5).all()
+
+    return jsonify([{"ip": s[0], "count": s[1]} for s in stats])

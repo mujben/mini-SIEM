@@ -121,3 +121,11 @@ export async function fetchAlerts() {
     if(!res.ok) throw new Error('Błąd pobierania alertów');
     return await res.json();
 }
+
+
+// fetch top 5 IPs chart
+export async function fetchTopIPStats() {
+    const res = await fetch("/api/stats/top-ips");
+    if(!res.ok) throw new Error("Błąd pobierania statystyk.");
+    return await res.json();
+}

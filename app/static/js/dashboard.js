@@ -1,6 +1,6 @@
 import { createEl, clearContainer } from './dom.js';
 import { fetchHosts, checkHostStatus, triggerLogFetch } from './api.js'; 
-import { fetchAlerts } from './api.js';
+import { fetchAlerts, fetchTopIPStats } from './api.js';
 
 const hostsContainer = document.getElementById('hostsContainer');
 const alertsBody = document.getElementById('alertsBody');
@@ -9,6 +9,7 @@ export async function initDashboard() {
     if (!hostsContainer) return;
 
     await refreshHostsList();
+    await initStatsChart();
 
     if (alertsBody) {
         await refreshAlertsTable();
@@ -165,4 +166,32 @@ async function refreshAlertsTable() {
     } catch (err) {
         console.error("Błąd tabeli alertów:", err);
     }
+}
+
+// process top 5 IPs chart
+async function initStatsChart() {
+    const ctx = document.getElementById('topIpsChart');
+    if(!ctx) return;
+
+    try {
+        const data = await fetchTopIPStats();
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => item.ip),
+                datasets: [{
+                    label: 'Liczba incydentów',
+                    data: data.map(item => item.count),
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgb(220, 53, 69)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {y: {beginAtZero: true}}
+            }
+        });
+    } catch (err) {console.error("Błąd wykresu: ", err);}
 }
