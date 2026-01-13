@@ -55,8 +55,8 @@ Projekt oparty o architekturę Klient-Serwer:
 
 ## 👥 Autorzy
 
-* ** Mikołaj Mitoń (Platform Engineer):** Security Hardening, Uwierzytelnianie, Panel Admina (Hosty), Frontend Configuration.
-* ** Zuzanna Kosek (Security Engineer):** Logika SIEM (Analyzer), Obsługa Logów (ETL), API Alertów i Threat Intel, Integracja Dashboardu.
+* **Mikołaj Mitoń (Platform Engineer):** Security Hardening, Uwierzytelnianie, Panel Admina (Hosty), Frontend Configuration.
+* **Zuzanna Kosek (Security Engineer):** Logika SIEM (Analyzer), Obsługa Logów (ETL), API Alertów i Threat Intel, Integracja Dashboardu.
 
 ## 🧠 Jak to działa? (Log Flow)
 
