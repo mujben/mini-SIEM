@@ -26,6 +26,12 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <!-- Navbar fragment -->
       <ul class="navbar-nav ms-auto">
+          <li class="nav-item d-flex align-items-center me-2">
+            <button class="btn btn-link nav-link px-2" id="bd-theme-toggle" type="button" title="Przełącz motyw">
+                <span id="theme-icon">🌙</span>
+            </button>
+          </li>
+          
           <li class="nav-item">
               <a class="nav-link" href="{{ url_for('ui.index') }}">Dashboard</a>
           </li>

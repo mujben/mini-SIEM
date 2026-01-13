@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from app.extensions import db
 from app.models import Alert, IPRegistry, Host
 from app.services.data_manager import DataManager
@@ -45,6 +45,21 @@ class LogAnalyzer:
             else:
                 # 3. Jeśli jest - zaktualizuj czas
                 ip_record.last_seen = datetime.now(timezone.utc)
+
+            # Zadanie dodatkowe 6.1 Cross-Host Correlation
+            if ip_record.status == 'UNKNOWN':
+                ten_min_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
+                other_hosts_attacked = Alert.query.filter(
+                    Alert.source_ip == ip,
+                    Alert.host_id != host_id,
+                    Alert.timestamp > ten_min_ago
+                ).count()
+
+                if other_hosts_attacked > 0:
+                    ip_record.status = 'BANNED'
+                    severity = 'CRITICAL'
+                    msg_prefix = "[CROSS-HOST ATTACK DETECTED]"
+                    db.session.commit()
 
             # 4. Ustal poziom alertu
             severity = 'WARNING'

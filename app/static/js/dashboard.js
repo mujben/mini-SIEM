@@ -54,7 +54,7 @@ function renderDashboardRow(host) {
     const checkBtn = createEl('button', ['btn', 'btn-outline-primary'], 'Status', btnGroup);
     checkBtn.addEventListener('click', () => handleCheckStatusFancy(host, colStatus, checkBtn));
 
-    const logsBtn = createEl('button', ['btn', 'btn-outline-dark'], 'Logi', btnGroup);
+    const logsBtn = createEl('button', ['btn', 'btn-outline-primary'], 'Logi', btnGroup);
     logsBtn.title = "Pobierz i przeanalizuj logi (SIEM)";
     logsBtn.addEventListener('click', () => handleFetchLogs(host, logsBtn));
 }
@@ -95,18 +95,18 @@ async function handleFetchLogs(host, btn) {
         const result = await triggerLogFetch(host.id);
         if (result.alerts > 0) {
             btn.innerHTML = '⚠️ ' + result.alerts;
-            btn.classList.remove('btn-outline-dark');
+            btn.classList.remove('btn-outline-secondary');
             btn.classList.add('btn-danger');
         } else {
             btn.innerHTML = '✅';
-            btn.classList.remove('btn-outline-dark');
+            btn.classList.remove('btn-outline-secondary');
             btn.classList.add('btn-success');
         }
         setTimeout(() => {
             btn.textContent = originalText;
             btn.disabled = false;
             btn.classList.remove('btn-danger', 'btn-success');
-            btn.classList.add('btn-outline-dark');
+            btn.classList.add('btn-outline-secondary');
         }, 3000);
 
         await refreshAlertsTable();
@@ -119,7 +119,7 @@ async function handleFetchLogs(host, btn) {
 }
 
 function addBadge(parent, label, value, colorClass) {
-    const box = createEl('div', ['text-center', 'border', 'rounded', 'bg-light', 'py-1'], '', parent);
+    const box = createEl('div', ['text-center', 'border', 'rounded', 'bg-opacity-10', 'py-1'], '', parent);
     box.style.width = '24%'; 
     const lbl = createEl('div', ['text-muted', 'text-uppercase'], label, box);
     lbl.style.fontSize = '0.65rem';
@@ -160,7 +160,7 @@ async function refreshAlertsTable() {
             const badgeCell = createEl('td', [], '', row);
             const badgeClasses = ['badge'];
             if (alert.severity === 'CRITICAL') badgeClasses.push('bg-danger');
-            else badgeClasses.push('bg-warning', 'text-dark');
+            else badgeClasses.push('bg-warning', 'text-secondary');
             createEl('span', badgeClasses, alert.severity, badgeCell);
         });
     } catch (err) {
@@ -169,13 +169,19 @@ async function refreshAlertsTable() {
 }
 
 // process top 5 IPs chart
+let IPsChart = null
 async function initStatsChart() {
     const ctx = document.getElementById('topIpsChart');
     if(!ctx) return;
 
     try {
         const data = await fetchTopIPStats();
-        new Chart(ctx, {
+
+        if(IPsChart) {
+            IPsChart.destroy();
+        }
+
+        IPsChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: data.map(item => item.ip),
