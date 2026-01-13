@@ -32,7 +32,7 @@ class LogAnalyzer:
             user = row.get('user', 'unknown')
             
             # Ignorujemy lokalne
-            if ip in ['LOCAL', 'LOCAL_CONSOLE', '127.0.0.1', '::1', '-']:
+            if ip in ['LOCAL_CONSOLE', '-']:
                 continue
             
             # 1. Sprawdź, czy IP jest w rejestrze

@@ -1,8 +1,7 @@
 import { createEl, clearContainer } from './dom.js';
 // Zauważ: Usuwamy importy fetchIPs itp., bo ich nie ma w api.js (student musi je dodać po napisaniu)
 import { fetchHosts, createHost, updateHost, removeHost } from './api.js'; 
-// TODO: Odkomentuj poniższy import, gdy uzupełnisz api.js
-// import { fetchIPs, createIP, updateIP, removeIP } from './api.js';
+import { fetchIPs, createIP, updateIP, removeIP } from './api.js';
 
 // --- SEKCJA HOSTÓW ---
 const hostsContainer = document.getElementById('hostsListAdmin');
@@ -31,7 +30,6 @@ export async function initAdmin() {
         document.getElementById('saveHostBtn').addEventListener('click', handleSaveHost);
     }
 
-    /* 
     // TODO: ZADANIE 3 (Frontend) - THREAT INTEL
     // Odkomentuj obsługę zdarzeń dla Rejestru IP, gdy odblokujesz HTML w config.html
     
@@ -42,7 +40,6 @@ export async function initAdmin() {
     }
     
     if (ipContainer) await refreshIPs();
-    */
 
     // Start Hosty
     if (hostsContainer) await refreshHosts();
@@ -120,7 +117,7 @@ async function handleSaveHost() {
 
 // ======================= LOGIKA IP REGISTRY (DO ODBLOKOWANIA) =======================
 
-/*
+
 // TODO: ZADANIE 3 (Frontend) - Odkomentuj całą poniższą sekcję
 // Uwaga: Funkcje fetchIPs, createIP itd. muszą zostać zaimplementowane w api.js!
 
@@ -199,4 +196,3 @@ async function handleSaveIP() {
         await refreshIPs();
     } catch(err) { alert(err.message); }
 }
-*/
