@@ -18,7 +18,7 @@ class LogAnalyzer:
             return 0
 
         # 2. Filtrowanie: Interesują nas tylko ataki
-        attack_pattern = ['FAILED_LOGIN', 'INVALID_USER', 'WIN_FAILED_LOGIN']
+        attack_pattern = ['FAILED_LOGIN', 'INVALID_USER', 'WIN_FAILED_LOGIN', 'SSH_WINDOWS_LOGIN']
         threats = df[df['alert_type'].isin(attack_pattern)]
         
         if threats.empty:
@@ -35,6 +35,17 @@ class LogAnalyzer:
             if ip in ['LOCAL_CONSOLE', '-']:
                 continue
             
+            # 0. sprawdzenie czy taki sam alert już istnieje
+            log_timestamp = row['timestamp']
+            existing_alert = Alert.query.filter_by(
+                host_id=host_id,
+                source_ip=ip,
+                alert_type=row['alert_type'],
+                timestamp=log_timestamp
+            ).first()
+            if existing_alert:
+                continue
+
             # 1. Sprawdź, czy IP jest w rejestrze
             ip_record = IPRegistry.query.filter_by(ip_address=ip).first()
             
@@ -47,6 +58,7 @@ class LogAnalyzer:
                 ip_record.last_seen = datetime.now(timezone.utc)
 
             # Zadanie dodatkowe 6.1 Cross-Host Correlation
+            cross_host_attack = False
             if ip_record.status == 'UNKNOWN':
                 ten_min_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
                 other_hosts_attacked = Alert.query.filter(
@@ -57,18 +69,20 @@ class LogAnalyzer:
 
                 if other_hosts_attacked > 0:
                     ip_record.status = 'BANNED'
-                    severity = 'CRITICAL'
-                    msg_prefix = "[CROSS-HOST ATTACK DETECTED]"
+                    cross_host_attack = True
                     db.session.commit()
 
-            # 4. Ustal poziom alertu
-            severity = 'WARNING'
-            msg_prefix = ""
-
-            if ip_record.status == 'BANNED':
+            if ip_record.status == 'BANNED' and cross_host_attack:
                 severity = 'CRITICAL'
-                msg_prefix = "[BANNED IP DETECTED!] "
-            elif ip_record.status == 'TRUSTED':
+                msg_prefix = "[CROSS-HOST ATTACK DETECTED]"
+            elif ip_record.status == 'BANNED':
+                severity = 'CRITICAL'
+                msg_prefix = "[BANNED IP DETECTED!] "                
+            else:  
+                severity = 'WARNING'
+                msg_prefix = ""
+
+            if ip_record.status == 'TRUSTED':
                 continue
             
             # 5. Stwórz Alert
@@ -78,7 +92,7 @@ class LogAnalyzer:
                 source_ip=ip,
                 severity=severity,
                 message=f"{msg_prefix}{row.get('message', 'Suspicious activity')}",
-                timestamp=datetime.now(timezone.utc)
+                timestamp=log_timestamp
             )
             
             db.session.add(new_alert)

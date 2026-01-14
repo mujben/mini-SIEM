@@ -11,3 +11,4 @@ Flask-WTF
 WTForms
 pandas
 pyarrow
+pywin32

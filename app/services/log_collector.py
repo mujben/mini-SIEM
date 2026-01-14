@@ -2,6 +2,10 @@ import re
 import json
 from datetime import datetime
 
+# needed for logs from failed ssh logins
+import win32evtlog
+import win32evtlogutil
+
 class LogCollector:
     """
     Pobiera i normalizuje logi z różnych systemów (Linux/Windows).
@@ -133,7 +137,8 @@ class LogCollector:
         # 2. ToXml() -> pozwala wyciągnąć IpAddress niezależnie od języka OS
         # 3. Parsowanie XML i budowanie obiektu JSON
         
-        ps_cmd = (
+        ps_security = (
+            f"try{{"
             f"Get-WinEvent -FilterHashtable {filter_script} {params} -ErrorAction SilentlyContinue | "
             "ForEach-Object { "
             "   $xml = [xml]$_.ToXml(); "
@@ -142,57 +147,73 @@ class LogCollector:
             "   [PSCustomObject]@{ "
             "       Timestamp = $_.TimeCreated.ToString('yyyy-MM-dd HH:mm:ss'); "
             "       IpAddress = $data['IpAddress']; "
-            "       TargetUserName = $data['TargetUserName']; "
+            "       User = $data['TargetUserName']; "
             "       EventId = $_.Id "
             "   } "
             "} | ConvertTo-Json -Compress"
+            f"}} catch {{ }}"
         )
         
-        print(f"DEBUG [Windows]: Executing PS with filter: {filter_script}") 
+        # collecting OpenSSH logs
+        ps_ssh = (
+            f"try {{"
+            f"Get-WinEvent -FilterHashtable @{{LogName='OpenSSH/Operational'; StartTime=[datetime]'{ts_str}'}} -ErrorAction SilentlyContinue | "
+            "ForEach-Object { "
+            "   if ($_.Message -match 'Failed password for (?:invalid user )?(.+) from ([\\d\\.]+)') { "
+            "       [PSCustomObject]@{ "
+            "           Timestamp = $_.TimeCreated.ToString('yyyy-MM-dd HH:mm:ss'); "
+            "           IpAddress = $matches[2]; "
+            "           User = $matches[1]; "
+            "           Type = 'SSH_WINDOWS_LOGIN' "
+            "       } "
+            "   } "
+            "} | ConvertTo-Json -Compress"
+            f"}} catch {{ }}"
+        )
 
-        try:
-            stdout = win_client.run_ps(ps_cmd)
-            
-            if not stdout:
-                return [] # Brak logów lub błąd PS
-
+        print(f"DEBUG [Windows]: Executing PS commands for (Security, OpenSSH)") 
+        for ps_cmd in [ps_security, ps_ssh]:
             try:
-                data = json.loads(stdout)
-            except json.JSONDecodeError:
-                print("WinLog Error: Invalid JSON output from PowerShell")
-                return []
-
-            # PowerShell zwraca dict (gdy 1 wynik) lub list (gdy wiele). Ujednolicamy.
-            entries = [data] if isinstance(data, dict) else data
-
-            for entry in entries:
-                # Czyste dane ze struktury XML
-                ip = entry.get('IpAddress', '-')
-                user = entry.get('TargetUserName', 'UNKNOWN')
-                ts_str = entry.get('Timestamp')
+                stdout = win_client.run_ps(ps_cmd)
                 
-                # Konwersja daty (String -> Datetime)
+                if not stdout:
+                    continue # Brak logów lub błąd PS
+
                 try:
-                    timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
-                except (ValueError, TypeError):
-                    timestamp = datetime.now()
+                    data = json.loads(stdout)
+                except json.JSONDecodeError:
+                    print("WinLog Error: Invalid JSON output from PowerShell")
+                    continue
 
-                # Normalizacja IP ("-" oznacza logowanie lokalne)
-                if not ip or ip == '-':
-                    ip = 'LOCAL_CONSOLE'
+                # PowerShell zwraca dict (gdy 1 wynik) lub list (gdy wiele). Ujednolicamy.
+                entries = [data] if isinstance(data, dict) else data
 
-                # Dodajemy do listy w formacie ujednoliconym z Linuxem
-                logs.append({
-                    'timestamp': timestamp,
-                    'alert_type': 'WIN_FAILED_LOGIN',
-                    'source_ip': ip,
-                    'user': user,
-                    'message': f"Windows Logon Failure for user: {user} (Event 4625)",
-                    'raw_log': json.dumps(entry)
-                })
-            print(f"DEBUG [Windows]: Collected {len(logs)} logs.")
-        except Exception as e:
-            print(f"Error collecting Windows logs: {e}")
-            return []
+                for entry in entries:
+                    # Czyste dane ze struktury XML
+                    ip = entry.get('IpAddress', 'LOCAL_CONSOLE')
+                    if not ip or ip == '-' or ip == '::1': ip = 'LOCAL_CONSOLE'
+                    user = entry.get('User', 'UNKNOWN')
+                    ts_str = entry.get('Timestamp')
 
+                    alert_type = entry.get('Type', 'WIN_FAILED_LOGIN')                
+
+                    # Konwersja daty (String -> Datetime)
+                    try:
+                        timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                    except (ValueError, TypeError):
+                        timestamp = datetime.now()
+
+                    # Dodajemy do listy w formacie ujednoliconym z Linuxem
+                    logs.append({
+                        'timestamp': timestamp,
+                        'alert_type': alert_type,
+                        'source_ip': ip,
+                        'user': user,
+                        'message': f"{alert_type} for user: {user}",
+                        'raw_log': json.dumps(entry)
+                    })
+                print(f"DEBUG [Windows]: Collected {len(logs)} logs.")
+            except Exception as e:
+                print(f"Error collecting Windows logs: {e}")
+                return []
         return logs
