@@ -2,10 +2,6 @@ import re
 import json
 from datetime import datetime
 
-# needed for logs from failed ssh logins
-import win32evtlog
-import win32evtlogutil
-
 class LogCollector:
     """
     Pobiera i normalizuje logi z różnych systemów (Linux/Windows).
@@ -171,8 +167,8 @@ class LogCollector:
             f"}} catch {{ }}"
         )
 
-        print(f"DEBUG [Windows]: Executing PS commands for (Security, OpenSSH)") 
         for ps_cmd in [ps_security, ps_ssh]:
+            print(f"DEBUG [Windows]: Executing PS commands for Security") if ps_cmd == ps_security else print(f"DEBUG [Windows]: Executing PS commands for OpenSSH") 
             try:
                 stdout = win_client.run_ps(ps_cmd)
                 
@@ -215,5 +211,4 @@ class LogCollector:
                 print(f"DEBUG [Windows]: Collected {len(logs)} logs.")
             except Exception as e:
                 print(f"Error collecting Windows logs: {e}")
-                return []
         return logs
